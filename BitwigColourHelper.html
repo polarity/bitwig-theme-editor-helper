@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitwig Theme Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            display: flex;
+            background-color: #242424;
+            color: #cecece;
+        }
+        .controls {
+            display: flex;
+            margin-right: 20px;
+            flex: 20%;
+            flex-wrap: wrap;
+            flex-direction: column;
+        }
+        .result {
+            flex: 80%;
+        }
+        #colorOutput {
+            display: flex;
+            flex-wrap: wrap;
+        }
+         #colorOutput h3 {
+          flex:100%
+        }
+        .color-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            margin-right: 10px;
+            width: 80px;
+            height: 80px;
+            padding: 2px;
+            font-size: 12px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .hidden {
+            display: none;
+        }
+        .slider-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h1>Bitwig Theme Editor</h1>
+        <div>
+            <textarea id="jsonInput" rows="10" cols="50">{}</textarea>
+        </div>
+
+        <div>
+            <button onclick="app.init()">Extract</button>
+        </div>
+        <div class="slider-container">
+            <label for="targetColor">Target Color: </label>
+            <input type="color" id="targetColor" value="#ffffff" onchange="app.updateTargetColor()" autocomplete="off">
+        </div>
+        <div class="slider-container">
+            <label for="colorSlider">Blend: </label>
+            <input type="range" id="colorSlider" min="0" max="100" value="0" oninput="app.blend()"c>
+        </div>
+        <div>
+            <label for="excludeGrays">Exclude Graytones: </label>
+            <input type="checkbox" id="excludeGrays" onchange="app.blend()" autocomplete="off">
+            <br><label for="excludeColorNames">Exclude Color Names: </label>
+            <input type="checkbox" id="excludeColorNames" onchange="app.blend()" autocomplete="off">
+            <hr>
+        </div>
+        <div class="slider-container">
+            <label for="hueShift">Hue Shift: </label>
+            <input type="range" id="hueShift" min="0" max="360" value="0" oninput="app.blend()" autocomplete="off">
+        </div>
+        <div class="slider-container">
+            <label for="contrastShift">Contrast: </label>
+            <input type="range" id="contrastShift" min="-100" max="100" value="0" oninput="app.blend()" autocomplete="off">
+        </div>
+        <!-- slider to saturate the color -->
+        <div class="slider-container">
+            <label for="saturateShift">Saturation: </label>
+            <input type="range" id="saturateShift" min="-100" max="100" value="0" oninput="app.blend()" autocomplete="off">
+        </div>
+        <!-- slider to remove the color red -->
+        <div class="slider-container">
+            <label for="removeRed">Remove Red: </label>
+            <input type="range" id="removeRed" min="0" max="100" value="0" oninput="app.blend()" autocomplete="off">
+        </div>
+        <!-- slider to remove the color blue -->
+        <div class="slider-container">
+            <label for="removeRed">Remove Blue: </label>
+            <input type="range" id="removeBlue" min="0" max="100" value="0" oninput="app.blend()" autocomplete="off">
+        </div>
+        <!-- slider to remove the color green -->
+        <div class="slider-container">
+            <label for="removeRed">Remove Green: </label>
+            <input type="range" id="removeGreen" min="0" max="100" value="0" oninput="app.blend()" autocomplete="off">
+        </div>
+        <div>
+            <button onclick="app.applyChanges()">Apply to JSON</button>
+        </div>
+    </div>
+    <div class="result">
+      <h2>Colours</h2>
+      <div id="colorOutput"></div>
+    </div>
+    <script>
+      const app = {
+          currentColorKey: null,
+          colorData: {},
+          originalColorData: {},
+          targetColor: "#000000FF",
+          colorNames: ['Emboss','Shadow','Red', 'Orange', "Grey", "Green", "Blue", "Yellow", "Purple", "Pink", "Brown", "Black", "White"],
+
+          init() {
+              const jsonInput = document.getElementById('jsonInput').value;
+              try {
+                  this.originalColorData = JSON.parse(jsonInput);
+                  this.colorData = JSON.parse(jsonInput);
+                  this.displayColors(this.colorData);
+              } catch (error) {
+                  console.error("Ungültiges JSON-Format", error);
+                  document.getElementById('colorOutput').innerText = 'Ungültiges JSON-Format';
+              }
+          },
+
+          displayColors(colorData) {
+              const colorOutput = document.getElementById('colorOutput');
+              colorOutput.innerHTML = '';
+              // sort the colorData object by key
+              const sortedColorData = Object.fromEntries(Object.entries(colorData).sort());
+
+
+              // separate the listing by certain names in the key
+              const groups = ['Button','Knob','Menu', "Scrollbar", "Text",'Hole','Error', 'Link', 'Content', 'Emboss', 'Shadow', 'Led','Popup', 'Panel', 'Meter', 'Comp', 'Notification', 'Display', 'Activation', 'Icon','Bitwig','Mapping','Tooltip','Tree', 'Device'];
+              for (const group of groups) {
+                  // filter the colorData object by the current group and compare lower case
+                  const groupColors = Object.entries(sortedColorData).filter(([description, hex]) => description.toLowerCase().includes(group.toLowerCase()));
+                  if (groupColors.length > 0) {
+                      const groupHeader = document.createElement('h3');
+                      groupHeader.innerText = group;
+                      colorOutput.appendChild(groupHeader);
+                      for (const [description, hex] of groupColors) {
+                          const colorDisplay = document.createElement('div');
+                          colorDisplay.className = 'color-display';
+                          colorDisplay.style.backgroundColor = hex;
+                          colorDisplay.dataset.key = description;
+                          colorDisplay.innerText = `${description}: ${hex}`;
+                          colorDisplay.onclick = () => this.pickColor(description, hex);
+                          colorOutput.appendChild(colorDisplay);
+                      }
+                  }
+              }
+
+              const restHeader = document.createElement('h3');
+              restHeader.innerText = "Rest"
+              colorOutput.appendChild(restHeader);
+
+              // display the rest of the colors but exclude the ones that are already displayed
+              const restColors = Object.entries(sortedColorData).filter(([description, hex]) => !groups.some(group => description.toLowerCase().includes(group.toLowerCase())));
+              for (const [description, hex] of restColors) {
+                  const colorDisplay = document.createElement('div');
+                  colorDisplay.className = 'color-display';
+                  colorDisplay.style.backgroundColor = hex;
+                  colorDisplay.dataset.key = description;
+                  colorDisplay.innerText = `${description}: ${hex}`;
+                  colorDisplay.onclick = () => this.pickColor(description, hex);
+                  colorOutput.appendChild(colorDisplay);
+              }
+          },
+
+          pickColor(key, currentHex) {
+              this.currentColorKey = key;
+              const colorPicker = document.getElementById('colorPicker');
+              colorPicker.value = currentHex.startsWith('#') ? currentHex.slice(0, 7) : '#ffffff';
+              colorPicker.click();
+          },
+
+          updateColor(event) {
+              if (this.currentColorKey !== null) {
+                  const newHex = event.target.value;
+                  const originalHex = this.originalColorData[this.currentColorKey];
+                  const newColor = originalHex.length === 9 ? `${newHex}${originalHex.slice(-2)}` : newHex;
+                  this.colorData[this.currentColorKey] = newColor;
+                  this.displayColors(this.colorData);
+                  this.currentColorKey = null;
+              }
+          },
+
+          updateTargetColor() {
+              this.targetColor = document.getElementById('targetColor').value + 'FF';
+              this.blend();
+          },
+
+          blend() {
+            const sliderValue = document.getElementById('colorSlider').value / 100;
+            const excludeGrays = document.getElementById('excludeGrays').checked;
+            const excludeColorNames = document.getElementById('excludeColorNames').checked;
+            const shiftValue = parseInt(document.getElementById('hueShift').value);
+            const contrastValue = parseInt(document.getElementById('contrastShift').value);
+            const saturateValue = parseInt(document.getElementById('saturateShift').value);
+            const removeRedValue = parseInt(document.getElementById('removeRed').value)  / 100;
+            const removeBlueValue = parseInt(document.getElementById('removeBlue').value) / 100;
+            const removeGreenValue = parseInt(document.getElementById('removeGreen').value) / 100;
+          
+            for (const [key, originalHex] of Object.entries(this.originalColorData)) {
+              if (excludeGrays && this.isGray(originalHex)) {
+                this.colorData[key] = originalHex;
+              } 
+              // exclude colornames found withing the string
+              else if (excludeColorNames && this.colorNames.some(colorName => key.toLowerCase().includes(colorName.toLowerCase()))) {
+                this.colorData[key] = originalHex;
+              }
+              else {
+                let targetColor, originalColor;
+
+                if (originalHex.length === 7) { // RGB
+                  originalColor = this.hexToRgb(originalHex);
+                  targetColor = this.hexToRgb(this.targetColor.slice(0, 7));
+                } else if (originalHex.length === 9) { // RGBA
+                  originalColor = this.hexToRgba(originalHex);
+                  targetColor = this.hexToRgba(this.targetColor);
+                }
+
+                const blendedColor = this.blendColors(originalColor, targetColor, sliderValue);
+                const hueShifted = this.hueShift(blendedColor, shiftValue);
+                const contrastShifted = this.contrastColor(hueShifted, contrastValue);
+                const saturationShifted = this.saturateColor(contrastShifted, saturateValue);
+                const redRemoved = this.removeColorComponent(saturationShifted,"r", removeRedValue);
+                const blueRemoved = this.removeColorComponent(redRemoved,"b", removeBlueValue);
+                const greenRemoved = this.removeColorComponent(blueRemoved,"g", removeGreenValue);
+          
+                if (originalHex.length === 7) { // RGB
+                  this.colorData[key] = this.rgbToHex(greenRemoved);
+                } else if (originalHex.length === 9) { // RGBA
+                  this.colorData[key] = this.rgbaToHex(greenRemoved);
+                }
+              }
+            }
+            this.displayColors(this.colorData);
+          },
+
+
+
+          applyChanges() {
+              document.getElementById('jsonInput').value = JSON.stringify(this.colorData, null, 2);
+          },
+
+          hexToRgb(hex) {
+              const bigint = parseInt(hex.slice(1), 16);
+              const r = (bigint >> 16) & 255;
+              const g = (bigint >> 8) & 255;
+              const b = bigint & 255;
+              return { r, g, b };
+          },
+
+          rgbToHex({ r, g, b }) {
+              return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+          },
+
+          hexToRgba(hex) {
+              const bigint = parseInt(hex.slice(1), 16);
+              const r = (bigint >> 24) & 255;
+              const g = (bigint >> 16) & 255;
+              const b = (bigint >> 8) & 255;
+              const a = bigint & 255;
+              return { r, g, b, a };
+          },
+
+          rgbaToHex({ r, g, b, a }) {
+              const alphaHex = a.toString(16).padStart(2, '0').toUpperCase();
+              return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}${alphaHex}`;
+          },
+
+          blendColors(color1, color2, weight) {
+            const r = Math.round(color1.r * (1 - weight) + color2.r * weight);
+            const g = Math.round(color1.g * (1 - weight) + color2.g * weight);
+            const b = Math.round(color1.b * (1 - weight) + color2.b * weight);
+            let a;
+
+            if ('a' in color1 && 'a' in color2) {
+              a = Math.round(color1.a * (1 - weight) + color2.a * weight);
+            }
+
+            return a !== undefined ? { r, g, b, a } : { r, g, b };
+          },
+
+          hueShift(color, shift) {
+            const { r, g, b, a } = color;
+            const hsl = this.rgbToHsl(r, g, b);
+            hsl.h = (hsl.h + shift) % 360;
+            const { r: newR, g: newG, b: newB } = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+            return a !== undefined ? { r: newR, g: newG, b: newB, a } : { r: newR, g: newG, b: newB };
+          },
+
+          contrastColor(color, shift) {
+              const { r, g, b, a } = color;
+              const hsl = this.rgbToHsl(r, g, b);
+              hsl.l = Math.min(1, Math.max(0, hsl.l + shift / 100));
+              const { r: newR, g: newG, b: newB } = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+              return a !== undefined ? { r: newR, g: newG, b: newB, a } : { r: newR, g: newG, b: newB };
+          },
+
+          saturateColor(color, shift) {
+              const { r, g, b, a } = color;
+              const hsl = this.rgbToHsl(r, g, b);
+              hsl.s = Math.min(1, Math.max(0, hsl.s + shift / 100));
+              const { r: newR, g: newG, b: newB } = this.hslToRgb(hsl.h, hsl.s, hsl.l);
+              return a !== undefined ? { r: newR, g: newG, b: newB, a } : { r: newR, g: newG, b: newB };
+          },
+
+          removeColorComponent(color, component, shift) {
+              const { r, g, b, a } = color;
+              let newR = r, newG = g, newB = b;
+
+              switch(component) {
+                  case 'r':
+                      newR = Math.round(r * (1 - shift));
+                      break;
+                  case 'g':
+                      newG = Math.round(g * (1 - shift));
+                      break;
+                  case 'b':
+                      newB = Math.round(b * (1 - shift));
+                      break;
+                  default:
+                      throw new Error('Invalid color component');
+              }
+
+              return a !== undefined ? { r: newR, g: newG, b: newB, a } : { r: newR, g: newG, b: newB };
+          },
+
+          rgbToHsl(r, g, b) {
+              r /= 255;
+              g /= 255;
+              b /= 255;
+              const max = Math.max(r, g, b), min = Math.min(r, g, b);
+              let h, s, l = (max + min) / 2;
+
+              if (max === min) {
+                  h = s = 0;
+              } else {
+                  const d = max - min;
+                  s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                  switch (max) {
+                      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                      case g: h = (b - r) / d + 2; break;
+                      case b: h = (r - g) / d + 4; break;
+                  }
+                  h /= 6;
+              }
+              return { h: h * 360, s, l };
+          },
+
+          hslToRgb(h, s, l) {
+              let r, g, b;
+
+              if (s === 0) {
+                  r = g = b = l;
+              } else {
+                  const hue2rgb = (p, q, t) => {
+                      if (t < 0) t += 1;
+                      if (t > 1) t -= 1;
+                      if (t < 1/6) return p + (q - p) * 6 * t;
+                      if (t < 1/2) return q;
+                      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                      return p;
+                  }
+
+                  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                  const p = 2 * l - q;
+                  h /= 360;
+                  r = hue2rgb(p, q, h + 1/3);
+                  g = hue2rgb(p, q, h);
+                  b = hue2rgb(p, q, h - 1/3);
+              }
+
+              return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+          },
+
+          isGray(hex) {
+              const { r, g, b } = this.hexToRgb(hex);
+              return r === g && g === b;
+          }
+      };
+
+    </script>
+</body>
+</html>
