@@ -1,4 +1,6 @@
-/* Optional integration suite: requires Playwright and its Chromium browser. */
+/* Optional integration suite: requires Playwright and its Chromium browser.
+ * Set THEME_CHROMIUM to the path of an installed Chrome/Chromium to reuse it
+ * instead of downloading Playwright's own browser. */
 'use strict';
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
@@ -7,8 +9,11 @@ const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
+const launch = { headless: true };
+if (process.env.THEME_CHROMIUM) launch.executablePath = process.env.THEME_CHROMIUM;
+
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch(launch);
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [], network = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -31,6 +36,11 @@ const { pathToFileURL } = require('node:url');
   try {
     await page.goto(pathToFileURL(path.resolve(__dirname, '../main.html')).href);
     assert.equal(await page.title(), 'Bitwig Theme Editor Helper');
+    // New themes follow the version selector. This suite drives the 5.x JSON flow;
+    // the 6.x BTE flow is checked at the end.
+    assert.equal(await page.locator('#bitwigVersion').inputValue(), '6');
+    await page.locator('#bitwigVersion').selectOption('5');
+    await page.locator('#newTheme').click();
     assert.equal(await page.locator('#exportOpen').isDisabled(), false);
     assert.equal(await page.locator('.color-row').count(), 248);
     const starter = JSON.parse(await exportText()); await closeExport();
@@ -133,6 +143,22 @@ const { pathToFileURL } = require('node:url');
     await page.locator('#contrast').press('Control+z'); assert.equal(await page.locator('#contrast').inputValue(), '30');
     await page.locator('#resetGlobal').click();
     assert.equal(await page.locator('#contrast').inputValue(), '0');
+    // Bitwig 6.x starter: flat BTE palette exported as new-theme.bte.
+    await page.locator('#bitwigVersion').selectOption('6');
+    assert.equal(await page.locator('#previewVersion').textContent(), 'Bitwig 6.x');
+    await page.locator('#newTheme').click();
+    assert.equal(await page.locator('#fileName').textContent(), 'new-theme.bte');
+    assert.equal(await page.locator('.color-row').count(), 355);
+    assert.equal(await page.locator('#previewScene').evaluate(node => node.style.getPropertyValue('--bw-1')), '#D2D2D2');
+    const sixText = await exportText();
+    assert.match(sixText, /^Window background: #2E2E2E$/m);
+    assert.match(sixText, /^Display Background: #1F1F1F$/m);
+    assert.equal(sixText.trimEnd().split('\n').length, 355);
+    assert.equal(await page.locator('#exportName').inputValue(), 'new-theme-edited.bte');
+    await closeExport();
+    await page.locator('#bitwigVersion').selectOption('5');
+    assert.equal(await page.locator('#previewScene').evaluate(node => node.style.getPropertyValue('--bw-1')), '#D2D2D2');
+    assert.match(await page.locator('#status').textContent(), /not in the Bitwig 5\.x palette/);
     // Check both layouts for horizontal overflow and inspector visibility.
     for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
       await page.setViewportSize(viewport);

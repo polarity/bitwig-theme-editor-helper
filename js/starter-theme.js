@@ -257,7 +257,8 @@
     "Track Automation Color": "#055988"
   }
 };
-  const api = { source: () => JSON.stringify(theme, null, 2) + '\n' };
+  const flat = Object.fromEntries(Object.values(theme).flatMap(group => Object.entries(group)));
+  const api = { reference: '5.x', palette: () => ({ ...flat }), source: () => JSON.stringify(theme, null, 2) + '\n' };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.StarterTheme = api;
 })(globalThis);

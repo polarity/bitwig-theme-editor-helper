@@ -4,17 +4,44 @@ const assert = require('node:assert/strict');
 const F = require('../js/theme-format.js');
 const ThemeModel = require('../js/theme-model.js');
 const P = require('../js/preview-model.js');
-const binding = name => P.bindings.find(b => b.name === name);
+const versions = require('../js/versions.js');
+const bindings = version => P.bindings(version);
+const binding = (name, version = '6') => bindings(version).find(b => b.name === name);
 const model = source => new ThemeModel(F.parseTheme(source));
 
 test('all 27 reference bindings resolve without a document and stay outside export', () => {
-  assert.equal(P.bindings.length, 27);
-  assert.equal(new Set(P.bindings.map(b => b.variable)).size, 27);
+  assert.equal(bindings('6').length, 27);
+  assert.equal(bindings('5').length, 27);
+  assert.equal(new Set(bindings('6').map(b => b.variable)).size, 27);
   assert.ok(P.snapshot(null).every(b => b.status === 'missing' && b.value === b.default));
   const m = model('Window background: #12345678\n// keep\nUnknown: data');
   assert.equal(P.snapshot(m).filter(b => b.entry).length, 1);
   assert.equal(m.export(), m.document.source);
   assert.equal(m.document.entries.length, 1);
+});
+
+test('each version supplies its own reference values while keeping the preview slots', () => {
+  const six = bindings('6'), five = bindings('5');
+  assert.deepEqual(six.map(b => b.variable), five.map(b => b.variable));
+  assert.deepEqual(six.map(b => b.area), five.map(b => b.area));
+  const value = (list, name) => list.find(b => b.name === name).default;
+  assert.equal(value(six, 'Window background'), '#2E2E2E');
+  assert.equal(value(six, 'Light Text'), '#D2D2D2');
+  assert.equal(value(six, 'Panel body'), '#464646');
+  assert.equal(value(six, 'Display Background'), '#1F1F1F');
+  assert.equal(value(six, 'Button background'), '#545454');
+  assert.equal(value(five, 'Light Text'), '#FFFFFF');
+  assert.equal(value(five, 'Panel body'), '#535353');
+  assert.equal(value(five, 'Button background'), '#76767680');
+  // Bitwig 6 dropped the Hitech background; the slot uses the closest 6.x color.
+  assert.equal(bindings('6').find(b => b.area === 'Hitech background').name, 'Nested Device Hole');
+  assert.equal(bindings('5').find(b => b.area === 'Hitech background').name, 'Hitech background');
+  // Every preview reference color exists in the version palette.
+  for (const version of versions.list) for (const item of bindings(version.id)) assert.ok(Object.hasOwn(version.palette, item.name), `${item.name} missing from ${version.label}`);
+  // Imported colors of the other version still resolve by name.
+  const legacy = model('Hitech background: #2B3236\nPanel body: #535353');
+  assert.equal(P.snapshot(legacy, false, {}, '6').filter(b => b.entry).length, 1);
+  assert.equal(P.snapshot(legacy, false, {}, '5').filter(b => b.entry).length, 2);
 });
 
 test('exact JSON section wins over flat and unrelated names; nested wrappers resolve by section', () => {

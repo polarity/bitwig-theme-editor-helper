@@ -4,6 +4,8 @@ const assert = require('node:assert/strict');
 const F = require('../js/theme-format.js');
 const ThemeModel = require('../js/theme-model.js');
 const starter = require('../js/starter-theme.js');
+const starterSix = require('../js/starter-theme-6.js');
+const versions = require('../js/versions.js');
 
 test('Original starter includes all window and arranger colors and round-trips', () => {
   const source = starter.source(), model = new ThemeModel(F.parseTheme(source));
@@ -51,4 +53,41 @@ test('randomized complete themes keep every alpha value and export valid colors'
     for (const entry of model.document.entries) assert.equal(F.parseColor(model.result(entry)).a, entry.color.a);
     assert.equal(F.parseTheme(model.export()).entries.length, 248);
   }
+});
+
+test('Bitwig 6.x starter is a flat BTE palette that round-trips', () => {
+  const source = starterSix.source(), palette = starterSix.palette();
+  const names = Object.keys(palette);
+  assert.equal(names.length, 355);
+  assert.equal(source.split('\n').length, 356);
+  const model = new ThemeModel(F.parseTheme(source));
+  assert.equal(model.document.entries.length, 355);
+  assert.equal(model.document.format, 'bte');
+  assert.equal(model.document.settings.length, 0);
+  assert.equal(model.export(), source);
+  assert.equal(model.dirty, false);
+  assert.equal(palette['Window background'], '#2E2E2E');
+  assert.equal(palette['Light Text'], '#D2D2D2');
+  assert.equal(palette['Panel body'], '#464646');
+  assert.equal(palette['Display Background'], '#1F1F1F');
+  assert.equal(palette['Device Header'], '#3C3C3C');
+  assert.equal(palette['Error Text'], '#FF3232C8');
+  // Names that contain no BTE syntax still parse back unchanged.
+  for (const name of ['Inspector Style / Push Button / Stroke Color', 'Frame color of selection cursor in the tree.']) assert.equal(F.parseTheme(`${name}: #ABCDEF\n`).entries[0].name, name);
+});
+
+test('version registry exposes the preview palette and starter for each version', () => {
+  assert.deepEqual(versions.list.map(version => version.id), ['6', '5']);
+  assert.equal(versions.defaultId, '6');
+  assert.equal(versions.get('6').format, 'bte');
+  assert.equal(versions.get('6').fileName, 'new-theme.bte');
+  assert.equal(versions.get('6').reference, '6.1.4');
+  assert.equal(versions.get('5').format, 'json');
+  assert.equal(versions.get('5').fileName, 'new-theme.json');
+  assert.equal(versions.get('unknown'), versions.get('6'));
+  assert.equal(Object.keys(versions.get('5').palette).length, 248);
+  assert.equal(Object.keys(versions.get('6').palette).length, 355);
+  const document = F.parseTheme('Panel body: #111111\nHitech background: #222222\nGradient: true');
+  assert.deepEqual(versions.unknown(document, '6').map(entry => entry.name), ['Hitech background']);
+  assert.deepEqual(versions.unknown(document, '5'), []);
 });

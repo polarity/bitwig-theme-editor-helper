@@ -11,6 +11,8 @@
   <script defer src="js/colors.js"></script>
   <script defer src="js/theme-model.js"></script>
   <script defer src="js/starter-theme.js"></script>
+  <script defer src="js/starter-theme-6.js"></script>
+  <script defer src="js/versions.js"></script>
   <script defer src="vendor/bitwig-preview/colors.js"></script>
   <script defer src="vendor/bitwig-preview/markup.js"></script>
   <script defer src="js/preview-model.js"></script>
@@ -20,15 +22,18 @@
 <body>
   <header class="toolbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">◧</span><div><h1>Theme Editor <span>Helper</span></h1><p>BITWIG STUDIO / COLOR WORKSPACE</p></div></div>
-    <nav aria-label="File and history actions">
-      <button id="newTheme" class="primary">New Theme</button>
-      <button id="importFile">Open theme</button><input id="fileInput" type="file" accept=".bte,.json,text/plain,application/json" hidden>
-      <button id="pasteOpen">Paste text</button>
-      <button id="undo" disabled title="Undo (Ctrl/Cmd+Z)">Undo</button>
-      <button id="redo" disabled title="Redo (Ctrl/Cmd+Shift+Z)">Redo</button>
-      <button id="exportOpen" class="primary" disabled>Export</button>
-      <a href="https://github.com/Berikai/awesome-bitwig-themes" target="_blank" rel="noopener noreferrer">Community ↗</a>
-    </nav>
+    <div class="toolbar-actions">
+      <label class="version-picker"><span>Bitwig version</span><select id="bitwigVersion"></select></label>
+      <nav aria-label="File and history actions">
+        <button id="newTheme" class="primary">New Theme</button>
+        <button id="importFile">Open theme</button><input id="fileInput" type="file" accept=".bte,.json,text/plain,application/json" hidden>
+        <button id="pasteOpen">Paste text</button>
+        <button id="undo" disabled title="Undo (Ctrl/Cmd+Z)">Undo</button>
+        <button id="redo" disabled title="Redo (Ctrl/Cmd+Shift+Z)">Redo</button>
+        <button id="exportOpen" class="primary" disabled>Export</button>
+        <a href="https://github.com/Berikai/awesome-bitwig-themes" target="_blank" rel="noopener noreferrer">Community ↗</a>
+      </nav>
+    </div>
   </header>
   <div class="document-bar"><span id="fileName">No theme loaded</span><span id="fileInfo">BTE + JSON · local file processing</span><span id="dirty"></span></div>
   <p id="status" role="status" aria-live="polite">Open or drop a theme to get started.</p>
@@ -47,14 +52,14 @@
     </aside>
     <section class="palette panel" aria-labelledby="paletteTitle">
       <details id="previewDetails" class="theme-preview" open>
-        <summary>Bitwig preview <span>Approximate reference UI</span></summary>
+        <summary>Bitwig preview <span>Approximate reference UI · <b id="previewVersion">Bitwig 6.x</b></span></summary>
         <div class="preview-controls"><label>Size <select id="previewSize"><option value="fit">Fit to width</option><option value="native">Original size</option></select></label><span id="previewCoverage" class="hint"></span></div>
         <div id="previewViewport" class="preview-viewport" tabindex="0" role="region" aria-label="Scrollable Bitwig preview">
           <div id="previewStage"><div id="previewScene" class="bw-preview"></div></div>
         </div>
         <div class="preview-color-controls"><label for="previewColor">Preview color</label><select id="previewColor"></select><button id="previewSelectColor" type="button">Select color</button></div>
         <p id="previewMessage" class="hint" role="status" aria-live="polite"></p>
-        <p class="hint">Click an area to select its color. Some details use fixed reference colors. Based on <a href="https://github.com/Berikai/bitwig-theme-editor-webui" target="_blank" rel="noopener noreferrer">Berikai’s preview ↗</a>.</p>
+        <p class="hint">Click an area to select its color. Some details are fixed. The layout is the 5.x-era reference UI; colors follow the selected Bitwig version. Based on <a href="https://github.com/Berikai/bitwig-theme-editor-webui" target="_blank" rel="noopener noreferrer">Berikai’s preview ↗</a>.</p>
       </details>
       <div class="section-heading"><div><span class="eyebrow">02 / PALETTE</span><h2 id="paletteTitle">Theme colors <span id="colorCount" class="count">0</span></h2></div><label class="compare"><input id="compare" type="checkbox" disabled> Show original</label></div>
       <div class="filter-bar"><label class="search-label"><span class="sr-only">Search color names, paths or hex values</span><input id="search" type="search" placeholder="Search names, paths or hex…" disabled></label><label><span class="sr-only">Filter by group</span><select id="group" disabled><option value="">All groups</option></select></label><label class="modified-filter"><input id="modifiedOnly" type="checkbox" disabled> Modified only</label></div>

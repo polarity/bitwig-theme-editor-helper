@@ -6,8 +6,10 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const { pathToFileURL } = require('node:url');
 const bindings = require('../vendor/bitwig-preview/colors.js');
+const launch = { headless: true };
+if (process.env.THEME_CHROMIUM) launch.executablePath = process.env.THEME_CHROMIUM;
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch(launch);
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = [], requests = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -24,6 +26,12 @@ const bindings = require('../vendor/bitwig-preview/colors.js');
     await page.goto(pathToFileURL(path.resolve(__dirname, '../main.html')).href);
     assert.equal(await page.locator('#previewDetails').getAttribute('open'), '');
     assert.match(await page.locator('#previewCoverage').textContent(), /27\/27/);
+    assert.equal(await page.locator('#previewVersion').textContent(), 'Bitwig 6.x');
+    // This suite drives the 5.x reference bindings; the 6.x pass runs at the end.
+    await page.locator('#bitwigVersion').selectOption('5');
+    await page.locator('#newTheme').click();
+    assert.equal(await page.locator('.color-row').count(), 248);
+    assert.equal(await page.locator('#previewVersion').textContent(), 'Bitwig 5.x');
     await page.locator('#previewScene #top_bar').click({ position: { x: 150, y: 8 } });
     assert.equal(await page.locator('#selectedName').textContent(), 'Window background');
     const fixture = {};
@@ -92,6 +100,20 @@ const bindings = require('../vendor/bitwig-preview/colors.js');
     await page.locator('#previewChoices button').nth(1).click(); assert.equal(await value('Panel body'), '#445566');
     // A later import must discard a previously chosen source.
     await paste('{"window":{"Panel body":"#aabbcc"}}'); assert.equal(await value('Panel body'), '#AABBCC');
+    // Bitwig 6.x reference values, plus the color that replaced the Hitech background.
+    await page.locator('#bitwigVersion').selectOption('6');
+    await page.locator('#newTheme').click();
+    assert.equal(await page.locator('#previewVersion').textContent(), 'Bitwig 6.x');
+    assert.match(await page.locator('#previewCoverage').textContent(), /27\/27/);
+    assert.equal(await value('Light Text'), '#D2D2D2');
+    assert.equal(await value('Panel body'), '#464646');
+    assert.equal(await value('Hitech background'), '#2B2B2B');
+    await page.locator('#previewColor').selectOption('--bw-13');
+    await page.locator('#previewSelectColor').click();
+    assert.equal(await page.locator('#selectedName').textContent(), 'Nested Device Hole');
+    await paste('Panel body: #101010');
+    assert.equal(await value('Panel body'), '#101010');
+    assert.equal(await value('Light Text'), '#D2D2D2');
     assert.deepEqual(errors, []); assert.deepEqual(requests, []);
     console.log('Preview browser integration passed: full reference, selection, keyboard, alpha, transforms, history, comparison, source choices, missing colors, export isolation, responsive scaling and local-only operation.');
   } finally { await browser.close(); }

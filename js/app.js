@@ -5,6 +5,23 @@
   const F = ThemeFormat, C = ThemeColors;
   let model = null, selected = null, rows = [], headings = [], frame = null, importSequence = 0, exportSource = '';
   const preview = createThemePreview(selectEntry);
+  const versionSelect = $('bitwigVersion');
+  for (const entry of ThemeVersions.list) versionSelect.add(new Option(entry.label, entry.id));
+  let version = ThemeVersions.defaultId;
+  versionSelect.value = version;
+  const versionInfo = () => ThemeVersions.get(version);
+  const versionTitle = info => `${info.label} reference colors. ${info.note}`;
+  /* Colors of the loaded theme that the selected Bitwig version does not use. */
+  function versionNote(document = model?.document) {
+    if (!document) return '';
+    const unknown = ThemeVersions.unknown(document, version).length;
+    return unknown ? ` ${unknown} of ${document.entries.length} colors are not in the ${versionInfo().label} palette.` : '';
+  }
+  versionSelect.title = versionTitle(versionInfo());
+  versionSelect.addEventListener('change', () => {
+    finishGesture(); version = versionSelect.value; versionSelect.title = versionTitle(versionInfo()); render();
+    report(`Preview and new themes now use ${versionInfo().label}.${versionNote()}`);
+  });
   function selectEntry(entry) {
     finishGesture(); selected = entry; preview.choose(entry);
     $('hexError').textContent = ''; $('hexInput').removeAttribute('aria-invalid');
@@ -94,7 +111,7 @@
     for (const id of ['exportOpen', 'resetGlobal', 'resetAll', 'randomizeColors', 'search', 'group', 'modifiedOnly', 'compare']) $(id).disabled = false;
     $('globalControls').disabled = false;
     buildPalette(); buildSettings(); render();
-    report(`Loaded ${parsed.entries.length} colors. Only imported entries are edited; missing entries keep their Bitwig defaults.`);
+    report(`Loaded ${parsed.entries.length} colors. Only imported entries are edited; missing entries keep their Bitwig defaults.${versionNote(parsed)}`);
   }
   async function readFile(file) {
     if (!file) return;
@@ -138,7 +155,7 @@
     if (!rows.length) $('noResults').textContent = 'This document has no color entries. Other values will be preserved on export.';
     else $('noResults').textContent = 'No colors match these filters.';
     document.body.classList.toggle('comparing', compare);
-    renderInspector(); renderHistory(); preview.update(model, selected, compare);
+    renderInspector(); renderHistory(); preview.update(model, selected, compare, version);
   }
   function renderInspector() {
     $('selectHint').hidden = !!selected; $('inspectorContent').hidden = !selected;
@@ -230,8 +247,9 @@
   });
   window.addEventListener('beforeunload', event => { if (model?.dirty) { event.preventDefault(); event.returnValue = ''; } });
   function newTheme() {
-    installTheme(StarterTheme.source(), 'new-theme.json');
-    report(`New theme · Original starter palette with ${model.document.entries.length} colors. Adjust the colors or try Randomize colors.`);
+    const info = versionInfo();
+    installTheme(info.source(), info.fileName);
+    report(`New theme · ${info.label} starter palette with ${model.document.entries.length} colors. Adjust the colors or try Randomize colors.`);
   }
   $('newTheme').addEventListener('click', newTheme);
   newTheme();
