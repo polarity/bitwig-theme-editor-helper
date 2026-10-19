@@ -42,6 +42,15 @@ const { pathToFileURL } = require('node:url');
     await page.locator('#randomizeColors').click();
     const randomized = JSON.parse(await exportText()); await closeExport();
     assert.notDeepEqual(randomized, starter);
+    for (const id of ['blend', 'hue', 'contrast', 'brightness', 'saturation', 'red', 'green', 'blue']) {
+      assert.equal(await page.locator('#' + id).inputValue(), '0');
+    }
+    await changeRange('brightness', [10]);
+    assert.notDeepEqual(JSON.parse(await exportText()), randomized); await closeExport();
+    await page.locator('#resetGlobal').click();
+    assert.deepEqual(JSON.parse(await exportText()), randomized); await closeExport();
+    await page.locator('#undo').click();
+    await page.locator('#undo').click();
     assert.equal(randomized.window['Audio Event Boundary'].slice(-2), '7B');
     assert.equal(await page.locator('#dirty').textContent(), 'Edited');
     await page.locator('#undo').click();

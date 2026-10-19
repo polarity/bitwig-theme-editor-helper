@@ -9,7 +9,7 @@
       this.document = document; this.state = this.initialState();
       this.past = []; this.future = []; this.gesture = null;
     }
-    initialState() { return { global: colors.defaults(), overrides: {}, settings: {} }; }
+    initialState() { return { global: colors.defaults(), palette: {}, overrides: {}, settings: {} }; }
     begin() { if (!this.gesture) this.gesture = clone(this.state); }
     commit() {
       if (!this.gesture) return;
@@ -27,16 +27,28 @@
       // A shared tint and hue keep the palette's light/dark relationships intact.
       const between = (min, max) => Math.floor(random() * (max - min + 1)) + min;
       this.edit(state => {
-        state.global = {
+        const neutral = {
           ...colors.defaults(),
-          target: format.toHex(colors.hslToRgb({ h: between(0, 359), s: 0.65, l: 0.5 }), false),
-          blend: between(8, 25), hue: between(-180, 180),
-          contrast: between(-10, 15), brightness: between(-8, 8), saturation: between(-10, 40),
           excludeGrays: state.global.excludeGrays, excludeNames: state.global.excludeNames
         };
+        const variation = {
+          ...neutral,
+          target: format.toHex(colors.hslToRgb({ h: between(0, 359), s: 0.65, l: 0.5 }), false),
+          blend: between(8, 25), hue: between(-180, 180),
+          contrast: between(-10, 15), brightness: between(-8, 8), saturation: between(-10, 40)
+        };
+        for (const entry of this.document.entries) {
+          if (Object.hasOwn(state.overrides, entry.id)) continue;
+          const current = { ...entry, color: format.parseColor(this.result(entry)) };
+          state.palette[entry.id] = colors.transform(current, variation);
+        }
+        state.global = neutral;
       });
     }
-    result(entry) { return this.state.overrides[entry.id] ?? colors.transform(entry, this.state.global); }
+    result(entry) {
+      const base = this.state.palette[entry.id];
+      return this.state.overrides[entry.id] ?? colors.transform(base ? { ...entry, color: format.parseColor(base) } : entry, this.state.global);
+    }
     results() { return Object.fromEntries(this.document.entries.map(entry => [entry.id, this.result(entry)])); }
     export() { return format.serializeTheme(this.document, this.results(), this.state.settings); }
     get dirty() { return JSON.stringify(this.state) !== JSON.stringify(this.initialState()); }

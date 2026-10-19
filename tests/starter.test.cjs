@@ -52,3 +52,25 @@ test('randomized complete themes keep every alpha value and export valid colors'
     assert.equal(F.parseTheme(model.export()).entries.length, 248);
   }
 });
+
+test('randomized palette leaves sliders neutral and can still be adjusted globally', () => {
+  const C = require('../js/colors.js');
+  const model = new ThemeModel(F.parseTheme('Accent: #12345680'));
+  const entry = model.document.entries[0];
+  model.edit(state => { state.global.hue = 50; state.global.brightness = 12; });
+  const before = model.export(), previous = { ...model.state.global };
+  model.randomize(() => 0.7);
+  const randomized = model.result(entry);
+  assert.deepEqual(model.state.global, C.defaults());
+  assert.equal(Object.keys(model.state.overrides).length, 0);
+  assert.notEqual(randomized, '#12345680');
+  model.undo(); assert.equal(model.export(), before); assert.deepEqual(model.state.global, previous);
+  model.redo(); assert.equal(model.result(entry), randomized);
+  model.edit(state => { state.global.brightness = 20; });
+  assert.notEqual(model.result(entry), randomized);
+  model.edit(state => { state.global = C.defaults(); });
+  assert.equal(model.result(entry), randomized);
+  model.edit(() => { model.state = model.initialState(); });
+  assert.equal(model.result(entry), '#12345680');
+  assert.equal(model.dirty, false);
+});

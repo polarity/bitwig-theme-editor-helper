@@ -130,7 +130,7 @@
       row.button.classList.toggle('selected', selected?.id === row.entry.id);
       row.button.setAttribute('aria-pressed', String(selected?.id === row.entry.id));
       row.button.classList.toggle('modified', modified);
-      row.badge.textContent = Object.hasOwn(model.state.overrides, row.entry.id) ? 'INDIVIDUAL' : modified ? 'GLOBAL' : '';
+      row.badge.textContent = Object.hasOwn(model.state.overrides, row.entry.id) ? 'INDIVIDUAL' : modified ? (result === model.state.palette[row.entry.id] ? 'RANDOMIZED' : 'GLOBAL') : '';
     }
     for (const { group, heading } of headings) heading.hidden = !visibleGroups.has(group);
     $('colorCount').textContent = `${visible} / ${rows.length}`; $('colorCount').title = `${changed} modified colors`;
@@ -178,7 +178,7 @@
   $('resetColor').addEventListener('click', () => { if (selected) { model.edit(state => { delete state.overrides[selected.id]; }); render(); } });
   $('randomizeColors').addEventListener('click', () => {
     finishGesture(); model.randomize(); $('compare').checked = false; render();
-    report('Randomized global colors. Alpha, protections and individual corrections are preserved. Undo to restore.');
+    report('Randomized colors. Global sliders are neutral. Alpha, protections and individual corrections are preserved. Undo to restore.');
   });
   $('resetGlobal').addEventListener('click', () => { model.edit(state => { state.global = C.defaults(); }); render(); });
   $('resetAll').addEventListener('click', () => { model.edit(() => { model.state = model.initialState(); }); render(); });
