@@ -43,7 +43,20 @@ if (process.env.THEME_CHROMIUM) launch.executablePath = process.env.THEME_CHROMI
     await page.locator('#newTheme').click();
     assert.equal(await page.locator('#exportOpen').isDisabled(), false);
     assert.equal(await page.locator('.color-row').count(), 248);
-    const starter = JSON.parse(await exportText()); await closeExport();
+    const starter = JSON.parse(await exportText());
+    await page.locator('#exportFormat').selectOption('bte');
+    const starterBte = await page.locator('#exportText').inputValue();
+    assert.match(starterBte, /Window background: #2E2E2E/);
+    assert.equal(starterBte.trim().split('\n').length, 248);
+    const bteDownloadPromise = page.waitForEvent('download');
+    await page.locator('#downloadExport').click();
+    const bteDownload = await bteDownloadPromise;
+    assert.match(bteDownload.suggestedFilename(), /\.bte$/);
+    const btePath = path.join(temp, 'starter.bte'); await bteDownload.saveAs(btePath);
+    assert.equal(await fs.readFile(btePath, 'utf8'), starterBte);
+    await page.locator('#exportFormat').selectOption('original');
+    assert.deepEqual(JSON.parse(await page.locator('#exportText').inputValue()), starter);
+    await closeExport();
     assert.equal(Object.keys(starter.window).length, 182);
     assert.equal(Object.keys(starter.arranger).length, 66);
     assert.equal(starter.window['Window background'], '#2E2E2E');
@@ -52,6 +65,17 @@ if (process.env.THEME_CHROMIUM) launch.executablePath = process.env.THEME_CHROMI
     await page.locator('#randomizeColors').click();
     const randomized = JSON.parse(await exportText()); await closeExport();
     assert.notDeepEqual(randomized, starter);
+    const randomRGBs = Object.values(randomized).flatMap(section => Object.values(section).map(hex => hex.slice(0, 7)));
+    assert.ok(new Set(randomRGBs).size > 200, 'elements should receive independently randomized colors');
+    for (const id of ['blend', 'hue', 'contrast', 'brightness', 'saturation', 'red', 'green', 'blue']) {
+      assert.equal(await page.locator('#' + id).inputValue(), '0');
+    }
+    await changeRange('brightness', [10]);
+    assert.notDeepEqual(JSON.parse(await exportText()), randomized); await closeExport();
+    await page.locator('#resetGlobal').click();
+    assert.deepEqual(JSON.parse(await exportText()), randomized); await closeExport();
+    await page.locator('#undo').click();
+    await page.locator('#undo').click();
     assert.equal(randomized.window['Audio Event Boundary'].slice(-2), '7B');
     assert.equal(await page.locator('#dirty').textContent(), 'Edited');
     await page.locator('#undo').click();
@@ -116,6 +140,11 @@ if (process.env.THEME_CHROMIUM) launch.executablePath = process.env.THEME_CHROMI
     await changeRange('blue', [100]);
     const jsonText = await exportText();
     const json = JSON.parse(jsonText); assert.equal(json.author, 'Robert'); assert.equal(json.version, 3);
+    await page.locator('#exportFormat').selectOption('bte');
+    assert.equal(await page.locator('#downloadExport').isDisabled(), true);
+    assert.match(await page.locator('#exportStatus').textContent(), /duplicate name/);
+    await page.locator('#exportFormat').selectOption('original');
+    assert.equal(await page.locator('#downloadExport').isDisabled(), false);
     const downloadPromise = page.waitForEvent('download'); await page.locator('#downloadExport').click();
     const download = await downloadPromise;
     assert.equal(download.suggestedFilename(), 'theme-edited.json');

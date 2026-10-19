@@ -147,7 +147,7 @@
       row.button.classList.toggle('selected', selected?.id === row.entry.id);
       row.button.setAttribute('aria-pressed', String(selected?.id === row.entry.id));
       row.button.classList.toggle('modified', modified);
-      row.badge.textContent = Object.hasOwn(model.state.overrides, row.entry.id) ? 'INDIVIDUAL' : modified ? 'GLOBAL' : '';
+      row.badge.textContent = Object.hasOwn(model.state.overrides, row.entry.id) ? 'INDIVIDUAL' : modified ? (result === model.state.palette[row.entry.id] ? 'RANDOMIZED' : 'GLOBAL') : '';
     }
     for (const { group, heading } of headings) heading.hidden = !visibleGroups.has(group);
     $('colorCount').textContent = `${visible} / ${rows.length}`; $('colorCount').title = `${changed} modified colors`;
@@ -195,7 +195,7 @@
   $('resetColor').addEventListener('click', () => { if (selected) { model.edit(state => { delete state.overrides[selected.id]; }); render(); } });
   $('randomizeColors').addEventListener('click', () => {
     finishGesture(); model.randomize(); $('compare').checked = false; render();
-    report('Randomized global colors. Alpha, protections and individual corrections are preserved. Undo to restore.');
+    report('Each unprotected element received its own random color. Global sliders are neutral. Alpha, protections and individual corrections are preserved. Undo to restore.');
   });
   $('resetGlobal').addEventListener('click', () => { model.edit(state => { state.global = C.defaults(); }); render(); });
   $('resetAll').addEventListener('click', () => { model.edit(() => { model.state = model.initialState(); }); render(); });
@@ -211,19 +211,42 @@
     catch (error) { $('pasteError').textContent = error.message; }
   });
   for (const close of document.querySelectorAll('[data-close]')) close.addEventListener('click', () => $(close.dataset.close).close());
+  function exportExtension() { return $('exportFormat').value === 'original' ? model.document.format : 'bte'; }
+  function updateExport() {
+    const extension = exportExtension();
+    try {
+      exportSource = model.export(extension);
+      $('exportText').value = exportSource;
+      $('exportStatus').textContent = extension !== model.document.format
+        ? 'BTE · colors and Gradient included. JSON groups are flattened; other metadata is omitted.'
+        : `${extension.toUpperCase()} · global results and individual corrections included`;
+      $('copyExport').disabled = $('downloadExport').disabled = false;
+    } catch (error) {
+      exportSource = ''; $('exportText').value = '';
+      $('exportStatus').textContent = error.message;
+      $('copyExport').disabled = $('downloadExport').disabled = true;
+    }
+  }
   $('exportOpen').addEventListener('click', () => {
-    finishGesture(); exportSource = model.export(); $('exportText').value = exportSource;
+    finishGesture();
     const extension = model.document.format;
+    $('exportFormat').value = 'original';
+    $('exportFormat').options[0].textContent = `${extension.toUpperCase()} (original)`;
+    $('exportFormat').options[1].hidden = extension === 'bte';
     $('exportName').value = (model.document.name || `theme.${extension}`).replace(/\.(?:bte|json)$/i, '') + `-edited.${extension}`;
-    $('exportStatus').textContent = `${extension.toUpperCase()} · global results and individual corrections included`;
+    updateExport();
     $('exportDialog').showModal();
+  });
+  $('exportFormat').addEventListener('change', () => {
+    $('exportName').value = $('exportName').value.replace(/\.(?:bte|json)$/i, '') + '.' + exportExtension();
+    updateExport();
   });
   $('copyExport').addEventListener('click', async () => {
     try { if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable'); await navigator.clipboard.writeText(exportSource); $('exportStatus').textContent = 'Theme text copied.'; }
     catch { $('exportText').focus(); $('exportText').select(); $('exportStatus').textContent = 'Clipboard unavailable here. Text selected — press Ctrl/Cmd+C to copy.'; }
   });
   $('downloadExport').addEventListener('click', () => {
-    const extension = model.document.format;
+    const extension = exportExtension();
     let name = $('exportName').value.trim() || `theme-edited.${extension}`;
     if (!name.toLowerCase().endsWith('.' + extension)) name += '.' + extension;
     const url = URL.createObjectURL(new Blob([exportSource], { type: extension === 'json' ? 'application/json;charset=utf-8' : 'text/plain;charset=utf-8' }));

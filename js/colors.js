@@ -18,9 +18,14 @@
     const [r, g, b] = sectors[Math.floor(h / 60)].map(v => (v + m) * 255);
     return { r, g, b };
   }
+  function isProtected(entry, settings) {
+    const { r, g, b } = entry.color;
+    return (settings.excludeGrays && r === g && g === b) ||
+      (settings.excludeNames && namedColors.some(name => entry.name.toLowerCase().includes(name.toLowerCase())));
+  }
   function transform(entry, settings) {
     const base = entry.color;
-    if ((settings.excludeGrays && base.r === base.g && base.g === base.b) || (settings.excludeNames && namedColors.some(name => entry.name.toLowerCase().includes(name.toLowerCase())))) return format.toHex(base);
+    if (isProtected(entry, settings)) return format.toHex(base);
     const color = { ...base };
     if (settings.blend) {
       const target = format.parseColor(settings.target), weight = settings.blend / 100;
@@ -40,7 +45,7 @@
     color.r *= 1 - settings.red / 100; color.g *= 1 - settings.green / 100; color.b *= 1 - settings.blue / 100;
     return format.toHex(color);
   }
-  const api = { defaults, transform, rgbToHsl, hslToRgb };
+  const api = { defaults, transform, isProtected, rgbToHsl, hslToRgb };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ThemeColors = api;
 })(globalThis);

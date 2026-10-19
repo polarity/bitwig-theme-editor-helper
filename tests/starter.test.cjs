@@ -91,3 +91,37 @@ test('version registry exposes the preview palette and starter for each version'
   assert.deepEqual(versions.unknown(document, '6').map(entry => entry.name), ['Hitech background']);
   assert.deepEqual(versions.unknown(document, '5'), []);
 });
+
+test('randomized palette leaves sliders neutral and can still be adjusted globally', () => {
+  const C = require('../js/colors.js');
+  const model = new ThemeModel(F.parseTheme('Accent: #12345680'));
+  const entry = model.document.entries[0];
+  model.edit(state => { state.global.hue = 50; state.global.brightness = 12; });
+  const before = model.export(), previous = { ...model.state.global };
+  model.randomize(() => 0.7);
+  const randomized = model.result(entry);
+  assert.deepEqual(model.state.global, C.defaults());
+  assert.equal(Object.keys(model.state.overrides).length, 0);
+  assert.notEqual(randomized, '#12345680');
+  model.undo(); assert.equal(model.export(), before); assert.deepEqual(model.state.global, previous);
+  model.redo(); assert.equal(model.result(entry), randomized);
+  model.edit(state => { state.global.brightness = 20; });
+  assert.notEqual(model.result(entry), randomized);
+  model.edit(state => { state.global = C.defaults(); });
+  assert.equal(model.result(entry), randomized);
+  model.edit(() => { model.state = model.initialState(); });
+  assert.equal(model.result(entry), '#12345680');
+  assert.equal(model.dirty, false);
+});
+
+test('each element draws its own random RGB color, even with identical starting colors', () => {
+  const model = new ThemeModel(F.parseTheme('First: #80808080\nSecond: #80808080\nThird: #80808080'));
+  const draws = [0, 0.25, 0.5, 0.75, 0.999, 0, 0.5, 0.25, 0.75];
+  let calls = 0;
+  model.randomize(() => draws[calls++]);
+  assert.equal(calls, 9);
+  assert.deepEqual(Object.values(model.results()), ['#00408080', '#C0FF0080', '#8040C080']);
+  assert.equal(model.past.length, 1);
+  model.undo(); assert.deepEqual(Object.values(model.results()), Array(3).fill('#80808080'));
+  model.redo(); assert.deepEqual(Object.values(model.results()), ['#00408080', '#C0FF0080', '#8040C080']);
+});
