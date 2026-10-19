@@ -11,3 +11,5 @@ Sources: `src/lib/BitwigUI/**/*.svelte` (all 26 components), and the 27 referenc
 The local adapter in `js/preview.js` supplies responsive sizing, accessible selection, source disambiguation and highlighting. `js/preview-model.js` resolves imported colors without adding reference colors to the theme. Derived button shading retains the imported alpha rather than forcing the source UI's opaque gradient.
 
 This is an approximation of the source project's Bitwig UI. Fixed icon/track colors and the abbreviated device area are retained; it is not connected to Bitwig Studio. Reference colors come from this revision, and do not claim to match the defaults of every Bitwig version.
+
+The window and arranger defaults from the same revision of `src/lib/Scripts/Theme.js` are embedded in `js/starter-theme.js` to provide the complete original starter palette offline.

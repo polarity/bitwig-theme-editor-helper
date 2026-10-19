@@ -5,13 +5,20 @@ const F = require('../js/theme-format.js');
 const ThemeModel = require('../js/theme-model.js');
 const starter = require('../js/starter-theme.js');
 
-test('White starter includes all supplied window and arranger colors and round-trips', () => {
+test('Original starter includes all window and arranger colors and round-trips', () => {
   const source = starter.source(), model = new ThemeModel(F.parseTheme(source));
   assert.equal(model.document.entries.length, 248);
   assert.equal(Object.keys(JSON.parse(source).window).length, 182);
   assert.equal(Object.keys(JSON.parse(source).arranger).length, 66);
   assert.deepEqual(JSON.parse(model.export()), JSON.parse(source));
   assert.equal(model.dirty, false);
+  const theme = JSON.parse(source);
+  assert.equal(theme.window['Window background'], '#2E2E2E');
+  assert.equal(theme.window['Light Text'], '#FFFFFF');
+  assert.equal(theme.window['Panel body'], '#535353');
+  assert.equal(theme.window.On, '#FF8713');
+  const bindings = require('../vendor/bitwig-preview/colors.js');
+  for (const binding of bindings) assert.equal(theme[binding.group][binding.name], binding.default.toUpperCase());
 });
 
 test('randomization preserves alpha, metadata, protected colors and overrides in one undo step', () => {

@@ -231,7 +231,7 @@
   window.addEventListener('beforeunload', event => { if (model?.dirty) { event.preventDefault(); event.returnValue = ''; } });
   function newTheme() {
     installTheme(StarterTheme.source(), 'new-theme.json');
-    report(`New theme · White starter palette with ${model.document.entries.length} colors. Adjust the colors or try Randomize colors.`);
+    report(`New theme · Original starter palette with ${model.document.entries.length} colors. Adjust the colors or try Randomize colors.`);
   }
   $('newTheme').addEventListener('click', newTheme);
   newTheme();
