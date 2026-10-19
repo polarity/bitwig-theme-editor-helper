@@ -10,6 +10,7 @@
   <script defer src="js/theme-format.js"></script>
   <script defer src="js/colors.js"></script>
   <script defer src="js/theme-model.js"></script>
+  <script defer src="js/starter-theme.js"></script>
   <script defer src="vendor/bitwig-preview/colors.js"></script>
   <script defer src="vendor/bitwig-preview/markup.js"></script>
   <script defer src="js/preview-model.js"></script>
@@ -20,6 +21,7 @@
   <header class="toolbar">
     <div class="brand"><span class="brand-mark" aria-hidden="true">◧</span><div><h1>Theme Editor <span>Helper</span></h1><p>BITWIG STUDIO / COLOR WORKSPACE</p></div></div>
     <nav aria-label="File and history actions">
+      <button id="newTheme" class="primary">New Theme</button>
       <button id="importFile">Open theme</button><input id="fileInput" type="file" accept=".bte,.json,text/plain,application/json" hidden>
       <button id="pasteOpen">Paste text</button>
       <button id="undo" disabled title="Undo (Ctrl/Cmd+Z)">Undo</button>
@@ -33,7 +35,8 @@
   <main>
     <aside class="adjustments panel" aria-labelledby="adjustTitle">
       <div class="section-heading"><div><span class="eyebrow">01 / TRANSFORM</span><h2 id="adjustTitle">Global adjustments</h2></div><button id="resetGlobal" class="quiet" disabled>Reset</button></div>
-      <p class="hint">Applied to every imported color. Alpha stays intact.</p>
+      <p class="hint">Applied to every theme color. Alpha stays intact.</p>
+      <button id="randomizeColors" class="wide" disabled title="Randomize global adjustments. Keeps alpha, protections and individual corrections. Undo to restore.">Randomize colors</button>
       <fieldset id="globalControls" disabled>
         <div class="tint-row"><label for="targetColor">Blend color</label><input type="color" id="targetColor" value="#ffffff"></div>
         <div id="sliders"></div>
@@ -56,7 +59,6 @@
       <div class="section-heading"><div><span class="eyebrow">02 / PALETTE</span><h2 id="paletteTitle">Theme colors <span id="colorCount" class="count">0</span></h2></div><label class="compare"><input id="compare" type="checkbox" disabled> Show original</label></div>
       <div class="filter-bar"><label class="search-label"><span class="sr-only">Search color names, paths or hex values</span><input id="search" type="search" placeholder="Search names, paths or hex…" disabled></label><label><span class="sr-only">Filter by group</span><select id="group" disabled><option value="">All groups</option></select></label><label class="modified-filter"><input id="modifiedOnly" type="checkbox" disabled> Modified only</label></div>
       <div class="palette-legend"><span>ELEMENT / SOURCE</span><span>ORIGINAL → RESULT</span></div>
-      <div id="emptyState" class="empty-state"><span class="empty-icon" aria-hidden="true">◫</span><h3>A new direction for your theme.</h3><p>Open a .bte or .json file, paste its contents,<br>or drop it anywhere in this window.</p><button id="loadExample" class="quiet">Try a small example</button><small>Only imported colors are edited. Missing entries keep their Bitwig defaults.</small></div>
       <div id="colorList"></div><p id="noResults" class="empty-state" hidden>No colors match these filters.</p>
     </section>
     <aside class="inspector panel" aria-labelledby="inspectorTitle">

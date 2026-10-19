@@ -91,8 +91,8 @@
     $('hexError').textContent = ''; $('hexInput').removeAttribute('aria-invalid');
     $('fileName').textContent = name || `Pasted theme.${parsed.format}`;
     $('fileInfo').textContent = `${parsed.format.toUpperCase()} · ${parsed.entries.length} colors · ${parsed.settings.length} settings`;
-    for (const id of ['exportOpen', 'resetGlobal', 'resetAll', 'search', 'group', 'modifiedOnly', 'compare']) $(id).disabled = false;
-    $('globalControls').disabled = false; $('emptyState').hidden = true;
+    for (const id of ['exportOpen', 'resetGlobal', 'resetAll', 'randomizeColors', 'search', 'group', 'modifiedOnly', 'compare']) $(id).disabled = false;
+    $('globalControls').disabled = false;
     buildPalette(); buildSettings(); render();
     report(`Loaded ${parsed.entries.length} colors. Only imported entries are edited; missing entries keep their Bitwig defaults.`);
   }
@@ -176,6 +176,10 @@
   $('hexInput').addEventListener('change', applyHex);
   $('hexInput').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); applyHex(); } });
   $('resetColor').addEventListener('click', () => { if (selected) { model.edit(state => { delete state.overrides[selected.id]; }); render(); } });
+  $('randomizeColors').addEventListener('click', () => {
+    finishGesture(); model.randomize(); $('compare').checked = false; render();
+    report('Randomized global colors. Alpha, protections and individual corrections are preserved. Undo to restore.');
+  });
   $('resetGlobal').addEventListener('click', () => { model.edit(state => { state.global = C.defaults(); }); render(); });
   $('resetAll').addEventListener('click', () => { model.edit(() => { model.state = model.initialState(); }); render(); });
   $('undo').addEventListener('click', () => { model.undo(); render(); });
@@ -225,5 +229,10 @@
     }
   });
   window.addEventListener('beforeunload', event => { if (model?.dirty) { event.preventDefault(); event.returnValue = ''; } });
-  $('loadExample').addEventListener('click', () => installTheme('// Example palette — not a complete Bitwig theme\nGradient: true\nWindow background: #23262cff\nButton background: #363d46\nButton stroke: #58616c\nLight Text: #d9dce0\nAccent (default): #d5a36eff\nMapping: #83b7a9\nMeter Normal: #92b58c\nMeter Red: #c87676\nKnob Value Color: #a69bc4\nShadow: #00000060\n', 'example.bte'));
+  function newTheme() {
+    installTheme(StarterTheme.source(), 'new-theme.json');
+    report(`New theme · White starter palette with ${model.document.entries.length} colors. Adjust the colors or try Randomize colors.`);
+  }
+  $('newTheme').addEventListener('click', newTheme);
+  newTheme();
 })();

@@ -23,9 +23,9 @@ const bindings = require('../vendor/bitwig-preview/colors.js');
   try {
     await page.goto(pathToFileURL(path.resolve(__dirname, '../main.html')).href);
     assert.equal(await page.locator('#previewDetails').getAttribute('open'), '');
-    assert.match(await page.locator('#previewCoverage').textContent(), /Reference preview/);
+    assert.match(await page.locator('#previewCoverage').textContent(), /27\/27/);
     await page.locator('#previewScene #top_bar').click({ position: { x: 150, y: 8 } });
-    assert.match(await page.locator('#previewMessage').textContent(), /Open a theme/);
+    assert.equal(await page.locator('#selectedName').textContent(), 'Window background');
     const fixture = {};
     for (const b of bindings) (fixture[b.group] ||= {})[b.name] = b.default;
     fixture.window['Window background'] = '#12345680'; fixture.window['Custom color'] = '#ff0000';
