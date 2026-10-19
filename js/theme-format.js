@@ -59,7 +59,25 @@
     if (document.format === 'bte' && !document.entries.length && !document.settings.length) throw new Error('No BTE colors or Gradient setting found.');
     return document;
   }
-  function serializeTheme(document, colors, settings = {}) {
+  function serializeTheme(document, colors, settings = {}, targetFormat = document.format) {
+    if (!['json', 'bte'].includes(targetFormat)) throw new Error('Unsupported export format.');
+    if (targetFormat !== document.format) {
+      if (targetFormat !== 'bte') throw new Error('Export imported BTE themes in their original format.');
+      const values = new Map();
+      const add = (entry, value) => {
+        if (!entry.name.trim() || /[:\r\n]|\/\//.test(entry.name) || entry.name !== entry.name.trim() || (entry.name === 'Gradient' && typeof value !== 'boolean')) {
+          throw new Error(`${entry.location}: this name cannot be represented in BTE.`);
+        }
+        if (values.has(entry.name) && values.get(entry.name) !== value) {
+          throw new Error(`BTE cannot store different values for duplicate name "${entry.name}". Use JSON or make their values identical.`);
+        }
+        values.set(entry.name, value);
+      };
+      for (const setting of document.settings) add(setting, Object.hasOwn(settings, setting.id) ? settings[setting.id] : setting.value);
+      for (const entry of document.entries) add(entry, colors[entry.id] ?? toHex(entry.color));
+      if (!values.size) throw new Error('No colors or Gradient setting available for BTE export.');
+      return [...values].map(([name, value]) => `${name}: ${value}`).join('\n') + '\n';
+    }
     if (document.format === 'json') {
       const data = JSON.parse(JSON.stringify(document.data));
       const assign = (path, value) => { let parent = data; for (const part of path.slice(0, -1)) parent = parent[part]; parent[path[path.length - 1]] = value; };

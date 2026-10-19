@@ -74,3 +74,15 @@ test('randomized palette leaves sliders neutral and can still be adjusted global
   assert.equal(model.result(entry), '#12345680');
   assert.equal(model.dirty, false);
 });
+
+test('each element draws its own random RGB color, even with identical starting colors', () => {
+  const model = new ThemeModel(F.parseTheme('First: #80808080\nSecond: #80808080\nThird: #80808080'));
+  const draws = [0, 0.25, 0.5, 0.75, 0.999, 0, 0.5, 0.25, 0.75];
+  let calls = 0;
+  model.randomize(() => draws[calls++]);
+  assert.equal(calls, 9);
+  assert.deepEqual(Object.values(model.results()), ['#00408080', '#C0FF0080', '#8040C080']);
+  assert.equal(model.past.length, 1);
+  model.undo(); assert.deepEqual(Object.values(model.results()), Array(3).fill('#80808080'));
+  model.redo(); assert.deepEqual(Object.values(model.results()), ['#00408080', '#C0FF0080', '#8040C080']);
+});

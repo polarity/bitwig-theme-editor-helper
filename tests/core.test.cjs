@@ -130,3 +130,33 @@ test('edited BTE and JSON exports reimport with identical rendered colors and se
     assert.equal(reimport.document.settings[0].value, false);
   }
 });
+
+test('JSON converts to BTE with final colors, alpha and Gradient, omitting metadata', () => {
+  const model = new ThemeModel(F.parseTheme(JSON.stringify({ window: { Accent: '#1234', Gradient: true }, arranger: { Background: '#00000000' }, author: 'Name' })));
+  model.state.overrides[model.document.entries[0].id] = '#ABCDEF80';
+  model.state.settings[model.document.settings[0].id] = false;
+  const source = model.export('bte');
+  assert.equal(source, 'Gradient: false\nAccent: #ABCDEF80\nBackground: #00000000\n');
+  const imported = new ThemeModel(F.parseTheme(source));
+  assert.deepEqual(Object.values(imported.results()), Object.values(model.results()));
+  assert.equal(imported.document.settings[0].value, false);
+  assert.equal(JSON.parse(model.export()).author, 'Name');
+});
+
+test('BTE conversion merges equal names and rejects conflicting or unsafe names', () => {
+  const convert = data => new ThemeModel(F.parseTheme(JSON.stringify(data))).export('bte');
+  assert.equal(convert({ a: { Accent: '#fff' }, b: { Accent: '#FFFFFF' } }), 'Accent: #FFFFFF\n');
+  assert.throws(() => convert({ a: { Accent: '#fff' }, b: { Accent: '#000' } }), /duplicate name/);
+  assert.throws(() => convert({ a: { Gradient: true }, b: { Gradient: false } }), /duplicate name/);
+  for (const name of ['A:B', 'A\nB', '// Comment', ' Accent ', 'Gradient']) {
+    assert.throws(() => convert({ [name]: '#fff' }), /cannot be represented/);
+  }
+  assert.throws(() => convert({ author: 'Name' }), /No colors/);
+});
+
+test('complete starter theme converts to BTE with all 248 colors', () => {
+  const model = new ThemeModel(F.parseTheme(require('../js/starter-theme.js').source()));
+  const imported = new ThemeModel(F.parseTheme(model.export('bte')));
+  assert.equal(imported.document.entries.length, 248);
+  assert.deepEqual(Object.values(imported.results()), Object.values(model.results()));
+});

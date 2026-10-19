@@ -7,10 +7,10 @@ Edit Bitwig theme colors in your browser. Supports `.bte` and `.json`, including
 ## How to use
 
 1. **Start a theme:** the editor opens with the original Bitwig reference palette (248 colors). Click **New Theme** in the toolbar to start again. Or **load a theme:** click **Open theme**, drag a file into the window, or choose **Paste text**. Find themes in the [community collection](https://github.com/Berikai/awesome-bitwig-themes).
-2. **Adjust all colors:** use Blend, Hue shift, Contrast, Brightness, Saturation and Remove red/green/blue. Enable the protection options to exclude grays or named colors. **Randomize colors** applies a random color variation directly to the palette, preserving alpha, protection options and individual corrections. Each click is one Undo step. Global sliders return to neutral and remain available to adjust the randomized palette. Reset global adjustments keeps the randomized colors; Reset all edits restores the original palette.
+2. **Adjust all colors:** use Blend, Hue shift, Contrast, Brightness, Saturation and Remove red/green/blue. Enable the protection options to exclude grays or named colors. **Randomize colors** assigns an independent random RGB color to each unprotected element, preserving alpha, protection options and individual corrections. Each click is one Undo step. Global sliders return to neutral and remain available to adjust the randomized palette. Reset global adjustments keeps the randomized colors; Reset all edits restores the original palette.
 3. **Preview and fine-tune:** the Bitwig preview above the palette updates as you edit. Click a preview area or choose a **Preview color** to select its imported color, then edit its color, hex value or alpha in **Selected color**. You can also select from the palette. Individual corrections stay fixed when global sliders change.
 4. **Compare:** toggle **Show original**. Use Undo/Redo or the reset buttons to revise changes.
-5. **Save:** click **Export**, then **Download** or **Copy text**. Apply the result using the external [Bitwig Theme Editor](https://github.com/Berikai/bitwig-theme-editor).
+5. **Save:** click **Export**, choose the original format or **BTE (.bte)** for JSON themes, then **Download** or **Copy text**. Apply the result using the external [Bitwig Theme Editor](https://github.com/Berikai/bitwig-theme-editor).
 
 ## Good to know
 
@@ -19,7 +19,7 @@ Edit Bitwig theme colors in your browser. Supports `.bte` and `.json`, including
 - Collapse **Bitwig preview** to make room for the palette. **Fit to width** shows the whole preview; **Original size** lets you scroll for a closer look. The preview color selector also reaches small borders and icons. Keyboard users can focus preview areas and press Enter or Space.
 - Search and group filters only affect the view; global sliders still affect all imported colors.
 - New themes include every window and arranger color from the original reference palette. Imported files retain their own entries; missing colors are not added.
-- Export keeps the original format and preserves BTE comments and other data.
+- Export defaults to the original format and preserves BTE comments and other data. JSON themes can also be exported as BTE: color names are flattened, alpha and Gradient are retained, and other JSON metadata is omitted. Conflicting duplicate names or names that BTE cannot represent block conversion with an explanation; use JSON to preserve these structures.
 - Export before loading another theme. Exported files contain final colors, not slider settings or edit history.
 
 ## Development checks
