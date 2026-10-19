@@ -4,6 +4,12 @@
   const $ = id => document.getElementById(id);
   const F = ThemeFormat, C = ThemeColors;
   let model = null, selected = null, rows = [], headings = [], frame = null, importSequence = 0, exportSource = '';
+  const preview = createThemePreview(selectEntry);
+  function selectEntry(entry) {
+    finishGesture(); selected = entry; preview.choose(entry);
+    $('hexError').textContent = ''; $('hexInput').removeAttribute('aria-invalid');
+    render();
+  }
   const sliderSpecs = [
     ['blend', 'Blend', 0, 100, '%'], ['hue', 'Hue shift', -180, 180, '°'],
     ['contrast', 'Contrast', -100, 100, '%'], ['brightness', 'Brightness', -100, 100, '%'],
@@ -59,7 +65,7 @@
         const values = element('span', 'color-values'), original = element('span', 'swatch checker'), arrow = element('span', 'swatch-arrow', '→'), result = element('span', 'swatch checker'), hex = element('code'), badge = element('span', 'edit-badge');
         original.style.setProperty('--swatch', F.toHex(entry.color)); original.title = `Original ${F.toHex(entry.color)}`;
         values.append(original, arrow, result, hex); info.append(badge); button.append(info, values);
-        button.addEventListener('click', () => { finishGesture(); selected = entry; $('hexError').textContent = ''; $('hexInput').removeAttribute('aria-invalid'); render(); });
+        button.addEventListener('click', () => selectEntry(entry));
         fragment.append(button); rows.push({ entry, group, button, result, hex, badge });
       }
     }
@@ -132,7 +138,7 @@
     if (!rows.length) $('noResults').textContent = 'This document has no color entries. Other values will be preserved on export.';
     else $('noResults').textContent = 'No colors match these filters.';
     document.body.classList.toggle('comparing', compare);
-    renderInspector(); renderHistory();
+    renderInspector(); renderHistory(); preview.update(model, selected, compare);
   }
   function renderInspector() {
     $('selectHint').hidden = !!selected; $('inspectorContent').hidden = !selected;

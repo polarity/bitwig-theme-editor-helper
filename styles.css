@@ -108,3 +108,27 @@ textarea { width: 100%; resize: vertical; padding: 12px; font: 12px/1.7 var(--mo
 @media (min-width: 1700px) { main { grid-template-columns: 290px minmax(300px, 1fr) 280px; } }
 @media (max-width: 1200px) { .toolbar { align-items: flex-start; flex-direction: column; gap: 14px; } main { grid-template-columns: 245px minmax(280px, 1fr); } .inspector { grid-column: 2; position: static; } .adjustments { grid-row: span 2; } }
 @media (max-width: 760px) { .toolbar { padding: 18px 16px; } .document-bar { padding: 12px 16px 0; gap: 8px; } #status { padding: 8px 16px 14px; } main { display: flex; flex-direction: column; padding: 0 12px 20px; gap: 12px; } .panel { width: 100%; padding: 16px; } .inspector { position: static; } .slider-block { margin-bottom: 12px; } .color-row { gap: 8px; padding-inline: 4px; } .color-values { gap: 4px; } .swatch { width: 23px; height: 26px; } .color-values code { min-width: 76px; font-size: 9px; } .section-heading { flex-wrap: wrap; } footer { padding: 0 16px 20px; flex-direction: column; gap: 8px; } nav a { margin-left: 0; } .empty-state { padding: 45px 8px; } }
+
+/* Preview chrome belongs to the editor. The scene below retains the reference
+   UI's component-scoped CSS and content-box dimensions (1228 × 768). */
+.theme-preview { margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 18px; }
+.theme-preview > summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+.theme-preview > summary span { font-weight: 400; color: var(--muted); font-size: 10px; margin-left: 8px; }
+.preview-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
+.preview-controls label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.preview-controls select { font-size: 11px; padding: 4px; }
+.preview-viewport { width: 100%; overflow: auto; background: #202020; border: 1px solid var(--border); border-radius: 4px; }
+#previewStage { position: relative; }
+.bw-preview { position: absolute; inset: 0 auto auto 0; width: 1228px; height: 768px; transform-origin: top left; font: 14px/1.5 Inter, system-ui, sans-serif; color: #ffffffde; user-select: none; }
+.bw-preview, .bw-preview * { box-sizing: content-box; font-style: normal !important; }
+.bw-preview [data-preview-color] { cursor: pointer; }
+.bw-preview .bw-hover { outline: 2px solid #63d7ff; outline-offset: -2px; }
+.bw-preview .bw-selected { outline: 2px solid #ffe47c; outline-offset: -2px; }
+.bw-preview [data-preview-color]:focus-visible { outline: 3px solid #63d7ff; outline-offset: -3px; }
+.preview-color-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; font-size: 11px; }
+#previewColor { flex: 1 1 150px; width: 100%; max-width: 100%; font-size: 11px; }
+#previewMessage:not(:empty) { margin-bottom: 8px; color: var(--accent); }
+#previewSelectedHint { margin-top: 12px; }
+#previewChoices { display: grid; gap: 8px; margin-top: 16px; }
+#previewChoices button { text-align: left; overflow-wrap: anywhere; }
+.bw-preview .hitech-group { background-color: var(--bw-13); }
