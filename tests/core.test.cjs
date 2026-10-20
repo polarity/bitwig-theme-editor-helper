@@ -119,6 +119,61 @@ test('one gesture is one history step, capped at 50; edits after undo invalidate
   const count = model.past.length; model.begin(); model.commit(); assert.equal(model.past.length, count);
 });
 
+test('bake preserves exact results and exports, flattens corrections and restores layers with undo', () => {
+  for (const source of [
+    '// Keep\r\nGradient: true\r\nAccent: #12345680\r\nGrey: #77777740\r\nRed: #F0000000\r\nCustom: metadata\r\n',
+    '{"window":{"Accent":"#12345680","Grey":"#77777740","Red":"#F0000000","Gradient":true},"author":"Robert"}'
+  ]) {
+    const model = new ThemeModel(F.parseTheme(source));
+    const originalExport = model.export();
+    const [accent, gray, red] = model.document.entries;
+    model.edit(state => {
+      state.palette[accent.id] = '#34567880';
+      state.global = { ...C.defaults(), target: '#8800FF', blend: 90, hue: 12, brightness: 5, excludeGrays: true, excludeNames: true };
+      state.overrides[accent.id] = '#AABBCC20';
+      state.settings[model.document.settings[0].id] = false;
+    });
+    const before = structuredClone(model.state), results = model.results(), exported = model.export(), history = model.past.length;
+    model.bake();
+    const baked = structuredClone(model.state);
+    assert.deepEqual(model.results(), results);
+    assert.equal(model.export(), exported);
+    assert.equal(model.result(gray), '#77777740');
+    assert.equal(model.result(red), '#F0000000');
+    assert.deepEqual(model.state.overrides, {});
+    assert.deepEqual(model.state.global, { ...C.defaults(), excludeGrays: true, excludeNames: true });
+    assert.equal(model.past.length, history + 1);
+    model.undo(); assert.deepEqual(model.state, before);
+    model.redo(); assert.deepEqual(model.state, baked);
+    model.edit(state => { state.global.target = '#FF0000'; state.global.blend = 50; });
+    assert.equal(model.result(accent), transform('#AABBCC20', { target: '#FF0000', blend: 50 }));
+    const second = model.results(); model.bake();
+    assert.deepEqual(model.results(), second);
+    model.edit(state => { state.global = C.defaults(); });
+    assert.deepEqual(model.results(), second);
+    model.edit(() => { model.state = model.initialState(); });
+    assert.equal(model.export(), originalExport);
+    assert.equal(model.dirty, false);
+  }
+});
+
+test('bake commits a pending slider gesture separately and permits further edits after undo', () => {
+  const model = new ThemeModel(F.parseTheme('Accent: #34567880'));
+  const first = model.document.entries[0];
+  model.begin(); model.state.global = { ...C.defaults(), target: '#8800FF', blend: 90 };
+  const purple = model.result(first);
+  model.bake();
+  assert.equal(model.past.length, 2);
+  assert.equal(model.result(first), purple);
+  model.undo(); assert.equal(model.state.global.blend, 90);
+  model.undo(); assert.equal(model.result(first), '#34567880');
+  model.redo(); model.redo();
+  model.edit(state => { state.global.target = '#FF0000'; state.global.blend = 25; });
+  assert.equal(model.result(first), transform(purple, { target: '#FF0000', blend: 25 }));
+  model.undo(); model.bake();
+  assert.equal(model.future.length, 1, 'a repeated bake at neutral is a no-op');
+});
+
 test('edited BTE and JSON exports reimport with identical rendered colors and settings', () => {
   for (const source of ['// Test\nGradient: true\nAccent: #1234\nUnknown: keep\nButton: #f00\n', '{"window":{"Accent":"#1234","Gradient":true},"arranger":{"Button":"#f00"},"unknown":17}']) {
     const model = new ThemeModel(F.parseTheme(source));

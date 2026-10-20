@@ -108,7 +108,7 @@
     $('hexError').textContent = ''; $('hexInput').removeAttribute('aria-invalid');
     $('fileName').textContent = name || `Pasted theme.${parsed.format}`;
     $('fileInfo').textContent = `${parsed.format.toUpperCase()} · ${parsed.entries.length} colors · ${parsed.settings.length} settings`;
-    for (const id of ['exportOpen', 'resetGlobal', 'resetAll', 'randomizeColors', 'search', 'group', 'modifiedOnly', 'compare']) $(id).disabled = false;
+    for (const id of ['exportOpen', 'resetGlobal', 'resetAll', 'randomizeColors', 'bakeColors', 'search', 'group', 'modifiedOnly', 'compare']) $(id).disabled = false;
     $('globalControls').disabled = false;
     buildPalette(); buildSettings(); render();
     report(`Loaded ${parsed.entries.length} colors. Only imported entries are edited; missing entries keep their Bitwig defaults.${versionNote(parsed)}`);
@@ -147,7 +147,7 @@
       row.button.classList.toggle('selected', selected?.id === row.entry.id);
       row.button.setAttribute('aria-pressed', String(selected?.id === row.entry.id));
       row.button.classList.toggle('modified', modified);
-      row.badge.textContent = Object.hasOwn(model.state.overrides, row.entry.id) ? 'INDIVIDUAL' : modified ? (result === model.state.palette[row.entry.id] ? 'RANDOMIZED' : 'GLOBAL') : '';
+      row.badge.textContent = Object.hasOwn(model.state.overrides, row.entry.id) ? 'INDIVIDUAL' : modified ? (result === model.state.palette[row.entry.id] ? 'BASE' : 'GLOBAL') : '';
     }
     for (const { group, heading } of headings) heading.hidden = !visibleGroups.has(group);
     $('colorCount').textContent = `${visible} / ${rows.length}`; $('colorCount').title = `${changed} modified colors`;
@@ -193,6 +193,10 @@
   $('hexInput').addEventListener('change', applyHex);
   $('hexInput').addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); applyHex(); } });
   $('resetColor').addEventListener('click', () => { if (selected) { model.edit(state => { delete state.overrides[selected.id]; }); render(); } });
+  $('bakeColors').addEventListener('click', () => {
+    finishGesture(); model.bake(); $('compare').checked = false; render();
+    report('Current colors baked as the new base, including individual corrections. Global sliders are neutral; alpha and protection options are preserved. Undo to restore.');
+  });
   $('randomizeColors').addEventListener('click', () => {
     finishGesture(); model.randomize(); $('compare').checked = false; render();
     report('Each unprotected element received its own random color. Global sliders are neutral. Alpha, protections and individual corrections are preserved. Undo to restore.');

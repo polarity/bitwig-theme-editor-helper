@@ -23,6 +23,16 @@
     edit(callback) { this.commit(); this.begin(); callback(this.state); this.commit(); }
     undo() { this.commit(); if (this.past.length) { this.future.push(clone(this.state)); this.state = this.past.pop(); } }
     redo() { this.commit(); if (this.future.length) { this.past.push(clone(this.state)); this.state = this.future.pop(); } }
+    bake() {
+      this.edit(state => {
+        state.palette = this.results();
+        state.overrides = {};
+        state.global = {
+          ...colors.defaults(),
+          excludeGrays: state.global.excludeGrays, excludeNames: state.global.excludeNames
+        };
+      });
+    }
     randomize(random = Math.random) {
       const byte = () => Math.floor(random() * 256);
       this.edit(state => {

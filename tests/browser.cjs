@@ -62,6 +62,33 @@ if (process.env.THEME_CHROMIUM) launch.executablePath = process.env.THEME_CHROMI
     assert.equal(starter.window['Window background'], '#2E2E2E');
     assert.equal(starter.window['Light Text'], '#FFFFFF');
     assert.equal(starter.window.On, '#FF8713');
+    await page.locator('#targetColor').evaluate(input => {
+      input.value = '#8800ff'; input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await changeRange('blend', [90]);
+    const purple = await exportText(); await closeExport();
+    await page.locator('#bakeColors').click();
+    assert.equal(await exportText(), purple); await closeExport();
+    for (const id of ['blend', 'hue', 'contrast', 'brightness', 'saturation', 'red', 'green', 'blue']) {
+      assert.equal(await page.locator('#' + id).inputValue(), '0');
+    }
+    assert.match(await page.locator('#status').textContent(), /baked as the new base/);
+    await page.locator('#undo').click();
+    assert.equal(await page.locator('#blend').inputValue(), '90');
+    await page.locator('#redo').click();
+    await page.locator('#targetColor').evaluate(input => {
+      input.value = '#ff0000'; input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    assert.equal(await exportText(), purple); await closeExport();
+    await changeRange('blend', [25]);
+    assert.notEqual(await exportText(), purple); await closeExport();
+    await page.locator('#resetGlobal').click();
+    assert.equal(await exportText(), purple); await closeExport();
+    await page.locator('#resetAll').click();
+    assert.deepEqual(JSON.parse(await exportText()), starter); await closeExport();
+    await page.locator('#newTheme').click();
     await page.locator('#randomizeColors').click();
     const randomized = JSON.parse(await exportText()); await closeExport();
     assert.notDeepEqual(randomized, starter);
